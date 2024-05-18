@@ -1,0 +1,960 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "0564ae50",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:52.582023Z",
+     "iopub.status.busy": "2024-05-18T20:27:52.581097Z",
+     "iopub.status.idle": "2024-05-18T20:27:53.628670Z",
+     "shell.execute_reply": "2024-05-18T20:27:53.627602Z"
+    },
+    "papermill": {
+     "duration": 1.059004,
+     "end_time": "2024-05-18T20:27:53.631433",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:52.572429",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+    "# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n",
+    "# For example, here's several helpful packages to load\n",
+    "\n",
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "\n",
+    "# Input data files are available in the read-only \"../input/\" directory\n",
+    "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        pass\n",
+    "        # print(os.path.join(dirname, filename))\n",
+    "\n",
+    "# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n",
+    "# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "46084e7c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:53.646269Z",
+     "iopub.status.busy": "2024-05-18T20:27:53.645127Z",
+     "iopub.status.idle": "2024-05-18T20:27:53.927234Z",
+     "shell.execute_reply": "2024-05-18T20:27:53.926068Z"
+    },
+    "papermill": {
+     "duration": 0.291269,
+     "end_time": "2024-05-18T20:27:53.929693",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:53.638424",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Cell to define imports\n",
+    "import numpy as np\n",
+    "import polars as pl\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "import os\n",
+    "%matplotlib inline"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "f6f24189",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:53.941570Z",
+     "iopub.status.busy": "2024-05-18T20:27:53.941187Z",
+     "iopub.status.idle": "2024-05-18T20:27:54.234986Z",
+     "shell.execute_reply": "2024-05-18T20:27:54.234055Z"
+    },
+    "papermill": {
+     "duration": 0.302596,
+     "end_time": "2024-05-18T20:27:54.237486",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:53.934890",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Read all required Parquets here\n",
+    "root :str = \"/kaggle/input/home-credit-credit-risk-model-stability/\"\n",
+    "datapath :str = os.path.join(root, \"parquet_files/train/\")\n",
+    "#1 - Train\n",
+    "train_base = pl.read_parquet(os.path.join(datapath, \"train_base.parquet\")) #train_base, has decisions\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "724dd41d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:54.249687Z",
+     "iopub.status.busy": "2024-05-18T20:27:54.249020Z",
+     "iopub.status.idle": "2024-05-18T20:27:54.338922Z",
+     "shell.execute_reply": "2024-05-18T20:27:54.337719Z"
+    },
+    "papermill": {
+     "duration": 0.09944,
+     "end_time": "2024-05-18T20:27:54.342010",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:54.242570",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "feature_definitions :pl.DataFrame = pl.read_csv(os.path.join(root, \"feature_definitions.csv\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "1999883a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:54.354178Z",
+     "iopub.status.busy": "2024-05-18T20:27:54.353748Z",
+     "iopub.status.idle": "2024-05-18T20:27:54.363218Z",
+     "shell.execute_reply": "2024-05-18T20:27:54.362098Z"
+    },
+    "papermill": {
+     "duration": 0.017968,
+     "end_time": "2024-05-18T20:27:54.365390",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:54.347422",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "### Class for looking up the definition of a single attribute / or all the attributes present in a file (If defn exists for that attribute). \n",
+    "class defnLookup:\n",
+    "    def __init__(self):\n",
+    "        self.feature_definitions :pl.DataFrame = pl.read_csv(os.path.join(root, \"feature_definitions.csv\"))\n",
+    "    \n",
+    "    # Attribute Meaning lookup in feature definition csv\n",
+    "    def lookupSingle(self, feature_name, definitions = feature_definitions) -> str:\n",
+    "        defn = definitions.filter(pl.col(\"Variable\") == feature_name)\n",
+    "        defn = defn.select(pl.col(\"Description\").alias(\"Descr\"))\n",
+    "        return defn.item()\n",
+    "    \n",
+    "    def lookupFile(self, file: pl.DataFrame):\n",
+    "        attributes_in_train_1 = file.columns\n",
+    "        availableDefn :list = self.feature_definitions[\"Variable\"].to_list()\n",
+    "        #attributes_in_train_1[0]\n",
+    "        for cols in attributes_in_train_1:\n",
+    "            if cols in availableDefn:\n",
+    "                print(\"{0} --- {1}\".format(cols, self.lookupSingle(cols, self.feature_definitions)))\n",
+    "\n",
+    "          \n",
+    "lookup = defnLookup()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "eb2f3365",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:54.377186Z",
+     "iopub.status.busy": "2024-05-18T20:27:54.376813Z",
+     "iopub.status.idle": "2024-05-18T20:27:56.851747Z",
+     "shell.execute_reply": "2024-05-18T20:27:56.850690Z"
+    },
+    "papermill": {
+     "duration": 2.484506,
+     "end_time": "2024-05-18T20:27:56.854956",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:54.370450",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Flow -> Select 3 or 4 files, of all depths and extract features from it for preprocessing. This can be generalized later.\n",
+    "# Work with 1 file at a time\n",
+    "# Currently working with train_person_1\n",
+    "train_person_1 = pl.read_parquet(os.path.join(root, datapath) + \"train_person_1.parquet\")\n",
+    "train_person_2 = pl.read_parquet(os.path.join(root, datapath) + \"train_person_2.parquet\")\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "ebc20fd7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:56.872461Z",
+     "iopub.status.busy": "2024-05-18T20:27:56.871437Z",
+     "iopub.status.idle": "2024-05-18T20:27:56.909786Z",
+     "shell.execute_reply": "2024-05-18T20:27:56.908581Z"
+    },
+    "papermill": {
+     "duration": 0.050564,
+     "end_time": "2024-05-18T20:27:56.913207",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:56.862643",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "birth_259D --- Date of birth of the person.\n",
+      "birthdate_87D --- Birth date of the person.\n",
+      "childnum_185L --- Number of children of the applicant.\n",
+      "contaddr_district_15M --- Zip code of a contact person's address.\n",
+      "contaddr_matchlist_1032L --- Indicates whether the contact address is found in a code list.\n",
+      "contaddr_smempladdr_334L --- Indicates whether the contact address is the same as the employment address.\n",
+      "contaddr_zipcode_807M --- Zip code of contact address.\n",
+      "education_927M --- Education level of the person.\n",
+      "empl_employedfrom_271D --- Start date of employment.\n",
+      "empl_employedtotal_800L --- Employment length of a person.\n",
+      "empl_industry_691L --- Employment Industry of the person.\n",
+      "empladdr_district_926M --- District where the employer's address is located.\n",
+      "empladdr_zipcode_114M --- Zipcode of employer's address.\n",
+      "familystate_447L --- Family state of the person.\n",
+      "gender_992L --- Gender of a person.\n",
+      "housetype_905L --- House type of the person.\n",
+      "housingtype_772L --- Type of housing of the person.\n",
+      "incometype_1044T --- Type of income of the person\n",
+      "isreference_387L --- Flag indicating whether the person is a reference contact.\n",
+      "language1_981M --- The primary language of the person.\n",
+      "mainoccupationinc_384A --- Amount of the main income of the client.\n",
+      "maritalst_703L --- Marital status of the client.\n",
+      "personindex_1023L --- Order of the person specified on the application form.\n",
+      "persontype_1072L --- Person type.\n",
+      "persontype_792L --- Person type.\n",
+      "registaddr_district_1083M --- District of person's registered address.\n",
+      "registaddr_zipcode_184M --- Registered address's zip code of a person.\n",
+      "relationshiptoclient_415T --- Relationship to the client.\n",
+      "relationshiptoclient_642T --- Relationship to the client.\n",
+      "remitter_829L --- Flag indicating whether the client is a remitter.\n",
+      "role_1084L --- Type of contact role.\n",
+      "role_993L --- Person's role.\n",
+      "safeguarantyflag_411L --- Flag indicating if client is using a flexible product with additional safeguard garanty.\n",
+      "sex_738L --- Gender of the client.\n",
+      "type_25L --- Contact type of a person.\n"
+     ]
+    }
+   ],
+   "source": [
+    "lookup.lookupFile(train_person_1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "680e8db8",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:56.938184Z",
+     "iopub.status.busy": "2024-05-18T20:27:56.937318Z",
+     "iopub.status.idle": "2024-05-18T20:27:57.262979Z",
+     "shell.execute_reply": "2024-05-18T20:27:57.261970Z"
+    },
+    "papermill": {
+     "duration": 0.346041,
+     "end_time": "2024-05-18T20:27:57.266060",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:56.920019",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div><style>\n",
+       ".dataframe > thead > tr,\n",
+       ".dataframe > tbody > tr {\n",
+       "  text-align: right;\n",
+       "  white-space: pre-wrap;\n",
+       "}\n",
+       "</style>\n",
+       "<small>shape: (9_907, 2)</small><table border=\"1\" class=\"dataframe\"><thead><tr><th>case_id</th><th>cn2</th></tr><tr><td>i64</td><td>f64</td></tr></thead><tbody><tr><td>2654114</td><td>1.0</td></tr><tr><td>1843131</td><td>0.0</td></tr><tr><td>1379291</td><td>0.0</td></tr><tr><td>1747560</td><td>0.0</td></tr><tr><td>1542684</td><td>0.0</td></tr><tr><td>&hellip;</td><td>&hellip;</td></tr><tr><td>996765</td><td>1.0</td></tr><tr><td>1945007</td><td>0.0</td></tr><tr><td>1348151</td><td>0.0</td></tr><tr><td>966412</td><td>0.0</td></tr><tr><td>1411990</td><td>0.0</td></tr></tbody></table></div>"
+      ],
+      "text/plain": [
+       "shape: (9_907, 2)\n",
+       "┌─────────┬─────┐\n",
+       "│ case_id ┆ cn2 │\n",
+       "│ ---     ┆ --- │\n",
+       "│ i64     ┆ f64 │\n",
+       "╞═════════╪═════╡\n",
+       "│ 2654114 ┆ 1.0 │\n",
+       "│ 1843131 ┆ 0.0 │\n",
+       "│ 1379291 ┆ 0.0 │\n",
+       "│ 1747560 ┆ 0.0 │\n",
+       "│ 1542684 ┆ 0.0 │\n",
+       "│ …       ┆ …   │\n",
+       "│ 996765  ┆ 1.0 │\n",
+       "│ 1945007 ┆ 0.0 │\n",
+       "│ 1348151 ┆ 0.0 │\n",
+       "│ 966412  ┆ 0.0 │\n",
+       "│ 1411990 ┆ 0.0 │\n",
+       "└─────────┴─────┘"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train_person_1.group_by('case_id').agg(pl.col('childnum_185L').max().alias(\"cn2\")).drop_nulls()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "8fbdcafb",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:57.286650Z",
+     "iopub.status.busy": "2024-05-18T20:27:57.285786Z",
+     "iopub.status.idle": "2024-05-18T20:27:57.292499Z",
+     "shell.execute_reply": "2024-05-18T20:27:57.291567Z"
+    },
+    "papermill": {
+     "duration": 0.020707,
+     "end_time": "2024-05-18T20:27:57.296414",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:57.275707",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "2973991"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "len(train_person_1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "025edf7a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:57.316268Z",
+     "iopub.status.busy": "2024-05-18T20:27:57.315542Z",
+     "iopub.status.idle": "2024-05-18T20:27:57.549691Z",
+     "shell.execute_reply": "2024-05-18T20:27:57.548625Z"
+    },
+    "papermill": {
+     "duration": 0.247351,
+     "end_time": "2024-05-18T20:27:57.552527",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:57.305176",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div><style>\n",
+       ".dataframe > thead > tr,\n",
+       ".dataframe > tbody > tr {\n",
+       "  text-align: right;\n",
+       "  white-space: pre-wrap;\n",
+       "}\n",
+       "</style>\n",
+       "<small>shape: (1_526_659, 2)</small><table border=\"1\" class=\"dataframe\"><thead><tr><th>case_id</th><th>ed</th></tr><tr><td>i64</td><td>u32</td></tr></thead><tbody><tr><td>2565248</td><td>1</td></tr><tr><td>979596</td><td>1</td></tr><tr><td>2555536</td><td>1</td></tr><tr><td>1398849</td><td>1</td></tr><tr><td>1637931</td><td>1</td></tr><tr><td>&hellip;</td><td>&hellip;</td></tr><tr><td>2538699</td><td>1</td></tr><tr><td>1819949</td><td>1</td></tr><tr><td>676049</td><td>3</td></tr><tr><td>773683</td><td>3</td></tr><tr><td>1294071</td><td>1</td></tr></tbody></table></div>"
+      ],
+      "text/plain": [
+       "shape: (1_526_659, 2)\n",
+       "┌─────────┬─────┐\n",
+       "│ case_id ┆ ed  │\n",
+       "│ ---     ┆ --- │\n",
+       "│ i64     ┆ u32 │\n",
+       "╞═════════╪═════╡\n",
+       "│ 2565248 ┆ 1   │\n",
+       "│ 979596  ┆ 1   │\n",
+       "│ 2555536 ┆ 1   │\n",
+       "│ 1398849 ┆ 1   │\n",
+       "│ 1637931 ┆ 1   │\n",
+       "│ …       ┆ …   │\n",
+       "│ 2538699 ┆ 1   │\n",
+       "│ 1819949 ┆ 1   │\n",
+       "│ 676049  ┆ 3   │\n",
+       "│ 773683  ┆ 3   │\n",
+       "│ 1294071 ┆ 1   │\n",
+       "└─────────┴─────┘"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train_person_1.group_by('case_id').agg(pl.col(\"education_927M\").count().alias(\"ed\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "1b530d8c",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:57.572323Z",
+     "iopub.status.busy": "2024-05-18T20:27:57.571470Z",
+     "iopub.status.idle": "2024-05-18T20:27:57.623583Z",
+     "shell.execute_reply": "2024-05-18T20:27:57.622556Z"
+    },
+    "papermill": {
+     "duration": 0.065523,
+     "end_time": "2024-05-18T20:27:57.626859",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:57.561336",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div><style>\n",
+       ".dataframe > thead > tr,\n",
+       ".dataframe > tbody > tr {\n",
+       "  text-align: right;\n",
+       "  white-space: pre-wrap;\n",
+       "}\n",
+       "</style>\n",
+       "<small>shape: (3, 1)</small><table border=\"1\" class=\"dataframe\"><thead><tr><th>empl_employedtotal_800L</th></tr><tr><td>str</td></tr></thead><tbody><tr><td>&quot;LESS_ONE&quot;</td></tr><tr><td>&quot;MORE_FIVE&quot;</td></tr><tr><td>&quot;MORE_ONE&quot;</td></tr></tbody></table></div>"
+      ],
+      "text/plain": [
+       "shape: (3, 1)\n",
+       "┌─────────────────────────┐\n",
+       "│ empl_employedtotal_800L │\n",
+       "│ ---                     │\n",
+       "│ str                     │\n",
+       "╞═════════════════════════╡\n",
+       "│ LESS_ONE                │\n",
+       "│ MORE_FIVE               │\n",
+       "│ MORE_ONE                │\n",
+       "└─────────────────────────┘"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train_person_1[[\"empl_employedtotal_800L\"]].drop_nulls().unique()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "1db1610e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:57.649296Z",
+     "iopub.status.busy": "2024-05-18T20:27:57.648621Z",
+     "iopub.status.idle": "2024-05-18T20:27:57.654167Z",
+     "shell.execute_reply": "2024-05-18T20:27:57.653037Z"
+    },
+    "papermill": {
+     "duration": 0.020467,
+     "end_time": "2024-05-18T20:27:57.656582",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:57.636115",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "def empl_transform(df):\n",
+    "    for i, x in enumerate(df):\n",
+    "        if x == None:\n",
+    "            x = 0\n",
+    "        else:\n",
+    "            x = 1\n",
+    "        df[i] = x\n",
+    "    return df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "884fa8d2",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:57.670834Z",
+     "iopub.status.busy": "2024-05-18T20:27:57.670040Z",
+     "iopub.status.idle": "2024-05-18T20:27:57.697067Z",
+     "shell.execute_reply": "2024-05-18T20:27:57.695701Z"
+    },
+    "papermill": {
+     "duration": 0.03706,
+     "end_time": "2024-05-18T20:27:57.699527",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:57.662467",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/tmp/ipykernel_18/2670736169.py:2: DeprecationWarning: `apply` is deprecated. It has been renamed to `map_elements`.\n",
+      "  pl.col(\"empl_employedtotal_800L\").apply(\n",
+      "sys:1: MapWithoutReturnDtypeWarning: Calling `map_elements` without specifying `return_dtype` can lead to unpredictable results. Specify `return_dtype` to silence this warning.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div><style>\n",
+       ".dataframe > thead > tr,\n",
+       ".dataframe > tbody > tr {\n",
+       "  text-align: right;\n",
+       "  white-space: pre-wrap;\n",
+       "}\n",
+       "</style>\n",
+       "<small>shape: (100, 2)</small><table border=\"1\" class=\"dataframe\"><thead><tr><th>case_id</th><th>empl_employedtotal_800L</th></tr><tr><td>i64</td><td>i64</td></tr></thead><tbody><tr><td>0</td><td>5</td></tr><tr><td>0</td><td>null</td></tr><tr><td>0</td><td>null</td></tr><tr><td>0</td><td>null</td></tr><tr><td>1</td><td>5</td></tr><tr><td>&hellip;</td><td>&hellip;</td></tr><tr><td>25</td><td>null</td></tr><tr><td>25</td><td>null</td></tr><tr><td>25</td><td>null</td></tr><tr><td>26</td><td>2</td></tr><tr><td>26</td><td>null</td></tr></tbody></table></div>"
+      ],
+      "text/plain": [
+       "shape: (100, 2)\n",
+       "┌─────────┬─────────────────────────┐\n",
+       "│ case_id ┆ empl_employedtotal_800L │\n",
+       "│ ---     ┆ ---                     │\n",
+       "│ i64     ┆ i64                     │\n",
+       "╞═════════╪═════════════════════════╡\n",
+       "│ 0       ┆ 5                       │\n",
+       "│ 0       ┆ null                    │\n",
+       "│ 0       ┆ null                    │\n",
+       "│ 0       ┆ null                    │\n",
+       "│ 1       ┆ 5                       │\n",
+       "│ …       ┆ …                       │\n",
+       "│ 25      ┆ null                    │\n",
+       "│ 25      ┆ null                    │\n",
+       "│ 25      ┆ null                    │\n",
+       "│ 26      ┆ 2                       │\n",
+       "│ 26      ┆ null                    │\n",
+       "└─────────┴─────────────────────────┘"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train_person_1.head(100).select(pl.col(\"case_id\"), \n",
+    "                                pl.col(\"empl_employedtotal_800L\").apply(\n",
+    "                                    lambda x: 0 if x=='null' else 1 if x==\"LESS_ONE\" else 2 if x == \"MORE_ONE\" else 5))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "b6871233",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:57.715001Z",
+     "iopub.status.busy": "2024-05-18T20:27:57.714268Z",
+     "iopub.status.idle": "2024-05-18T20:27:59.261009Z",
+     "shell.execute_reply": "2024-05-18T20:27:59.259749Z"
+    },
+    "papermill": {
+     "duration": 1.557963,
+     "end_time": "2024-05-18T20:27:59.263884",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:57.705921",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div><style>\n",
+       ".dataframe > thead > tr,\n",
+       ".dataframe > tbody > tr {\n",
+       "  text-align: right;\n",
+       "  white-space: pre-wrap;\n",
+       "}\n",
+       "</style>\n",
+       "<small>shape: (1_526_659, 2)</small><table border=\"1\" class=\"dataframe\"><thead><tr><th>case_id</th><th>Significance</th></tr><tr><td>i64</td><td>f64</td></tr></thead><tbody><tr><td>0</td><td>0.3125</td></tr><tr><td>1</td><td>0.25</td></tr><tr><td>2</td><td>0.25</td></tr><tr><td>3</td><td>0.416667</td></tr><tr><td>4</td><td>0.3125</td></tr><tr><td>&hellip;</td><td>&hellip;</td></tr><tr><td>2703450</td><td>0.0</td></tr><tr><td>2703451</td><td>0.0</td></tr><tr><td>2703452</td><td>0.0</td></tr><tr><td>2703453</td><td>0.0</td></tr><tr><td>2703454</td><td>0.0</td></tr></tbody></table></div>"
+      ],
+      "text/plain": [
+       "shape: (1_526_659, 2)\n",
+       "┌─────────┬──────────────┐\n",
+       "│ case_id ┆ Significance │\n",
+       "│ ---     ┆ ---          │\n",
+       "│ i64     ┆ f64          │\n",
+       "╞═════════╪══════════════╡\n",
+       "│ 0       ┆ 0.3125       │\n",
+       "│ 1       ┆ 0.25         │\n",
+       "│ 2       ┆ 0.25         │\n",
+       "│ 3       ┆ 0.416667     │\n",
+       "│ 4       ┆ 0.3125       │\n",
+       "│ …       ┆ …            │\n",
+       "│ 2703450 ┆ 0.0          │\n",
+       "│ 2703451 ┆ 0.0          │\n",
+       "│ 2703452 ┆ 0.0          │\n",
+       "│ 2703453 ┆ 0.0          │\n",
+       "│ 2703454 ┆ 0.0          │\n",
+       "└─────────┴──────────────┘"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# temp = train_person_1.head(100).select(pl.col(\"empl_employedtotal_800L\").is_null(), pl.col(\"empl_employedtotal_800L\").alias(\"x\"))\n",
+    "# temp.select(pl.col(\"empl_employedtotal_800L\"))\n",
+    "# temp.select(pl.apply(exprs = [\"empl_employedtotal_800L\", \"x\"], function = lambda df : \"null\" if df[0] else df[1]).alias(\"x\"))\n",
+    "\n",
+    "temp = train_person_1.select(pl.col(\"case_id\"), pl.col(\"empl_employedtotal_800L\")).fill_null(\"null\") # Step 1: null to \"null\"\n",
+    "temp = temp.select(pl.col(\"case_id\"), pl.col(\"empl_employedtotal_800L\").map_elements(\n",
+    "                                    lambda x: 0.0 if x==\"null\" else 1.0 if x==\"LESS_ONE\" else 2.0 if x == \"MORE_ONE\" else 5.0, return_dtype = pl.Float32))\n",
+    "\n",
+    "temp.group_by(\"case_id\").agg(pl.col(\"empl_employedtotal_800L\").count().alias(\"count\"), \n",
+    "                             pl.col(\"empl_employedtotal_800L\").sum() / 4.0, \n",
+    "                            ).sort(by=\"case_id\").with_columns(((1.0/pl.col(\"count\")) * pl.col(\"empl_employedtotal_800L\")).\n",
+    "                                                                       alias(\"Significance\")).select(pl.col(\"case_id\"), pl.col(\"Significance\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "c5992b34",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:27:59.280579Z",
+     "iopub.status.busy": "2024-05-18T20:27:59.279245Z",
+     "iopub.status.idle": "2024-05-18T20:28:02.559503Z",
+     "shell.execute_reply": "2024-05-18T20:28:02.558126Z"
+    },
+    "papermill": {
+     "duration": 3.290747,
+     "end_time": "2024-05-18T20:28:02.562207",
+     "exception": false,
+     "start_time": "2024-05-18T20:27:59.271460",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "from sklearn.preprocessing import LabelBinarizer\n",
+    "\n",
+    "### Interested in the features below in train_person_1\n",
+    "'''\n",
+    "childnum_185L --- Number of children of the applicant - Ordinal, unspecified\n",
+    "education_927M --- Education level of the person. - Categorical\n",
+    "empl_employedtotal_800L --- Employment length of a person. - Categorical, Unspecified\n",
+    "familystate_447L --- Family state of the person. (Married, Divorced….), Categorical, Unspecified\n",
+    "incometype_1044T --- Type of income of the person (Government, Private…), categorical\n",
+    "mainoccupationinc_384A --- Amount of the main income of the client. (Most Important), numerical \n",
+    "maritalst_703L --- Marital status of the client, categorical\n",
+    "safeguarantyflag_411L --- Flag indicating if client is using a flexible product with additional safeguard guaranty.\n",
+    "'''\n",
+    "### Plan : Transformations using polars -> convert to pandas, or convert polars DF to_numpy() -> Preprocessing, \n",
+    "\n",
+    "### 1. Numerical/categorical/object?? \n",
+    "### 2. Handle NA \n",
+    "### 3. Transform into something else???? \n",
+    "\n",
+    "class transformations:\n",
+    "    def __init__(self, df: pl.DataFrame):\n",
+    "        self.df = df\n",
+    "    \n",
+    "    def joinFeatures(self):\n",
+    "        pass\n",
+    "    \n",
+    "    # Defind methods for transorming each table\n",
+    "    def train_person_1_transform(self):\n",
+    "        # Childnum_185L, ordinal do not touch\n",
+    "        cn185L = self.df.group_by('case_id').agg(pl.col('childnum_185L').max().alias('cn185L'))\n",
+    "        \n",
+    "        # education_927M\n",
+    "        ed927M = self.df.group_by('case_id').agg(pl.col(\"education_927M\").count().alias(\"ed\"))\n",
+    "        \n",
+    "        # empl_employedtotal_800L\n",
+    "        # Step 1: null to \"null\"\n",
+    "        em800L = self.df.select(pl.col(\"case_id\"), pl.col(\"empl_employedtotal_800L\")).fill_null(\"null\") \n",
+    "        # Step 2: Map null to 0 (No employment history), LESS_ONE to 1 (Less than One Year), MORE_ONE = 2.0 (More than one Year), Else 5.0\n",
+    "        em800L = em800L.select(pl.col(\"case_id\"), pl.col(\"empl_employedtotal_800L\").map_elements(\n",
+    "                                    lambda x: 0.0 if x==\"null\" else 1.0 if x==\"LESS_ONE\" else 2.0 if x == \"MORE_ONE\" else 5.0, \n",
+    "                                    return_dtype = pl.Float32)\n",
+    "                          )\n",
+    "        # Step 3: Group by the case_id and aggregate on empl_800L, count the number of entries for each case ID\n",
+    "        #         Since there are 4 distinct values for empl_800L, find the sum and div / 4.0 . (we don't find the mean because count is diff)\n",
+    "        #         To penalize case_id's with more entries we mutliply the value calculated above by 1/(count of entries).\n",
+    "        #         Logic: The more entries for case_id, the more our div/4.0 will be penalized. If all people involved in a case_id\n",
+    "        #         have some form of experience this penalty is minimal. If Just one person has experience and there's 5 people involved\n",
+    "        #         in the case_id, penalty is high. This could mean that the primary borrower is the only person employed.\n",
+    "        em800L = em800L.group_by(\"case_id\").agg(pl.col(\"empl_employedtotal_800L\").count().alias(\"count\"), \n",
+    "                             pl.col(\"empl_employedtotal_800L\").sum() / 4.0, \n",
+    "                            ).sort(by=\"case_id\").with_columns(((1.0/pl.col(\"count\")) * pl.col(\"empl_employedtotal_800L\")).\n",
+    "                                                                       alias(\"Significance\")).select(pl.col(\"case_id\", \"Significance\"))\n",
+    "            \n",
+    "        \n",
+    "        \n",
+    "        \n",
+    "        \n",
+    "        \n",
+    "        \n",
+    "        \n",
+    "        \n",
+    "transformation = transformations(train_person_1)\n",
+    "transformation.train_person_1_transform()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "063df2b7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:28:02.576624Z",
+     "iopub.status.busy": "2024-05-18T20:28:02.576263Z",
+     "iopub.status.idle": "2024-05-18T20:28:02.867058Z",
+     "shell.execute_reply": "2024-05-18T20:28:02.866065Z"
+    },
+    "papermill": {
+     "duration": 0.301823,
+     "end_time": "2024-05-18T20:28:02.870393",
+     "exception": false,
+     "start_time": "2024-05-18T20:28:02.568570",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "train_person_1_feats_1 = train_person_1.group_by(\"case_id\").agg(\n",
+    "    pl.col(\"mainoccupationinc_384A\").max().alias(\"mainoccupationinc_384A_max\"),\n",
+    "    (pl.col(\"incometype_1044T\") == \"SELFEMPLOYED\").max().alias(\"mainoccupationinc_384A_any_selfemployed\")\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "7769738f",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:28:02.885907Z",
+     "iopub.status.busy": "2024-05-18T20:28:02.885557Z",
+     "iopub.status.idle": "2024-05-18T20:28:02.892824Z",
+     "shell.execute_reply": "2024-05-18T20:28:02.891706Z"
+    },
+    "papermill": {
+     "duration": 0.018473,
+     "end_time": "2024-05-18T20:28:02.895523",
+     "exception": false,
+     "start_time": "2024-05-18T20:28:02.877050",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['case_id',\n",
+       " 'birth_259D',\n",
+       " 'birthdate_87D',\n",
+       " 'childnum_185L',\n",
+       " 'contaddr_district_15M',\n",
+       " 'contaddr_matchlist_1032L',\n",
+       " 'contaddr_smempladdr_334L',\n",
+       " 'contaddr_zipcode_807M',\n",
+       " 'education_927M',\n",
+       " 'empl_employedfrom_271D',\n",
+       " 'empl_employedtotal_800L',\n",
+       " 'empl_industry_691L',\n",
+       " 'empladdr_district_926M',\n",
+       " 'empladdr_zipcode_114M',\n",
+       " 'familystate_447L',\n",
+       " 'gender_992L',\n",
+       " 'housetype_905L',\n",
+       " 'housingtype_772L',\n",
+       " 'incometype_1044T',\n",
+       " 'isreference_387L',\n",
+       " 'language1_981M',\n",
+       " 'mainoccupationinc_384A',\n",
+       " 'maritalst_703L',\n",
+       " 'num_group1',\n",
+       " 'personindex_1023L',\n",
+       " 'persontype_1072L',\n",
+       " 'persontype_792L',\n",
+       " 'registaddr_district_1083M',\n",
+       " 'registaddr_zipcode_184M',\n",
+       " 'relationshiptoclient_415T',\n",
+       " 'relationshiptoclient_642T',\n",
+       " 'remitter_829L',\n",
+       " 'role_1084L',\n",
+       " 'role_993L',\n",
+       " 'safeguarantyflag_411L',\n",
+       " 'sex_738L',\n",
+       " 'type_25L']"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train_person_1.columns"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "4c7ff620",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-05-18T20:28:02.910218Z",
+     "iopub.status.busy": "2024-05-18T20:28:02.909807Z",
+     "iopub.status.idle": "2024-05-18T20:28:02.917413Z",
+     "shell.execute_reply": "2024-05-18T20:28:02.916370Z"
+    },
+    "papermill": {
+     "duration": 0.017965,
+     "end_time": "2024-05-18T20:28:02.919984",
+     "exception": false,
+     "start_time": "2024-05-18T20:28:02.902019",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'Type of income of the person'"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "lookup.lookupSingle('incometype_1044T')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6524bbc8",
+   "metadata": {
+    "papermill": {
+     "duration": 0.008428,
+     "end_time": "2024-05-18T20:28:02.938225",
+     "exception": false,
+     "start_time": "2024-05-18T20:28:02.929797",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "databundleVersionId": 7921029,
+     "sourceId": 50160,
+     "sourceType": "competition"
+    }
+   ],
+   "dockerImageVersionId": 30698,
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.13"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 13.889107,
+   "end_time": "2024-05-18T20:28:03.667250",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-05-18T20:27:49.778143",
+   "version": "2.5.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
